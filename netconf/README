@@ -1,0 +1,9 @@
+To enable the network auto config on boot:
+
+1. Copy waco-net-conf.sh to /usr/local/bin/
+2. Copy waco-net-conf.service to /etc/systemd/system/
+3. Set permissions chmod 744 /usr/local/bin/waco-net-conf.sh
+4. Set permissions chmod 644 /etc/systemd/system/waco-net-conf.service
+5. Run systemctl daemon-reload
+6. Run systemctl enable waco-net-conf.service --now
+
