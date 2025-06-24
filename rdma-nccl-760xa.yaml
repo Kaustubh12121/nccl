@@ -1,0 +1,57 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: nccl-r760xa
+  namespace: default
+spec:
+  slotsPerWorker: 4
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+         spec:
+           containers:
+            - image: veeranool/bcm-roce-pytorch:25.01-py3
+              name: mpi-test
+              command:
+               - sleep
+               - infinity
+    Worker:
+      replicas: 4
+      template:
+        metadata:
+          annotations:
+            k8s.v1.cni.cncf.io/networks: wa110,wa116
+          labels:
+            app: nccl-r760xa
+        spec:
+          serviceAccountName: rdma
+          containers:
+          - image: veeranool/bcm-roce-pytorch:25.01-py3
+            name: nccl-r760xa
+            securityContext:
+              privileged: true
+              capabilities:
+                add: [ "IPC_LOCK" ]
+            resources:
+              limits:
+                ephemeral-storage: 100Gi
+                nvidia.com/gpu: 4
+                rdma/hca_shared_devices_a: 8
+              requests:
+                ephemeral-storage: 100Gi
+                nvidia.com/gpu: 4
+                rdma/hca_shared_devices_a: 8
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 128Gi
+          nodeSelector:
+            nvidia.com/gpu.product: NVIDIA-H100-NVL
+ 
