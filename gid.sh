@@ -134,4 +134,4 @@
  
     done #d (dev)
  
-    echo n_gids_found=$gid_coun
+    echo n_gids_found=$gid_count
