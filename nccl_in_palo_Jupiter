@@ -1,0 +1,91 @@
+admin@jupitercontrol:~/nccl$ cat nccl-test.yaml
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: nccl-xe9780
+  annotations:
+    k8s.v1.cni.cncf.io/networks: gpu-901-network, gpu-902-network, gpu-903-network, gpu-904-network, gpu-905-network, gpu-906-network, gpu-907-network, gpu-908-network
+spec:
+  slotsPerWorker: 8
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - image: veeranool/bcm_roce_233198_cuv129_cudv575:py25.05-py3
+              name: mpi-test
+              command:
+                - /usr/sbin/sshd
+                - -D
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: In
+                        values:
+                          - worker01
+                          - worker02
+    Worker:
+      replicas: 2
+      template:
+        metadata:
+          annotations:
+            k8s.v1.cni.cncf.io/networks: gpu-901-network, gpu-902-network, gpu-903-network, gpu-904-network, gpu-905-network, gpu-906-network, gpu-907-network, gpu-908-network
+          labels:
+            app: nccl-xe9780
+        spec:
+          containers:
+            - image: veeranool/bcm_roce_233198_cuv129_cudv575:py25.05-py3
+              name: nccl-xe9780
+              command:
+                - /usr/sbin/sshd
+                - -D
+              securityContext:
+                capabilities:
+                  add:
+                    - IPC_LOCK
+              resources:
+                limits:
+                  ephemeral-storage: 100Gi
+                  nvidia.com/gpu: 8
+                  nvidia.com/GPU-901: 1
+                  nvidia.com/GPU-902: 1
+                  nvidia.com/GPU-903: 1
+                  nvidia.com/GPU-904: 1
+                  nvidia.com/GPU-905: 1
+                  nvidia.com/GPU-906: 1
+                  nvidia.com/GPU-907: 1
+                  nvidia.com/GPU-908: 1
+                requests:
+                  ephemeral-storage: 100Gi
+                  nvidia.com/gpu: 8
+                  nvidia.com/GPU-901: 1
+                  nvidia.com/GPU-902: 1
+                  nvidia.com/GPU-903: 1
+                  nvidia.com/GPU-904: 1
+                  nvidia.com/GPU-905: 1
+                  nvidia.com/GPU-906: 1
+                  nvidia.com/GPU-907: 1
+                  nvidia.com/GPU-908: 1
+              volumeMounts:
+                - mountPath: /dev/shm
+                  name: dshm
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: In
+                        values:
+                          - worker01
+                          - worker02
+          volumes:
+            - name: dshm
+              emptyDir:
+                medium: Memory
