@@ -1,0 +1,78 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: nccl-7745
+spec:
+  slotsPerWorker: 4
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+         spec:
+           containers:
+            - image: veeranool/bcm_roce_233198_cuv129_cudv575:py25.05-py3
+              name: mpi-test
+              command:
+               - sleep
+               - infinity
+           affinity:
+             nodeAffinity:
+               requiredDuringSchedulingIgnoredDuringExecution:
+                 nodeSelectorTerms:
+                 - matchExpressions:
+                   - key: kubernetes.io/hostname
+                     operator: In
+                     values:
+                     - keechi-titan-63
+                     - keechi-titan-64
+    Worker:
+      replicas: 2
+      template:
+        metadata:
+          annotations:
+            k8s.v1.cni.cncf.io/networks: sriov-resource-a-network, sriov-resource-b-network, sriov-resource-c-network, sriov-resource-d-network
+          labels:
+            app: nccl-7745
+        spec:
+          containers:
+          - image: veeranool/bcm_roce_233198_cuv129_cudv575:py25.05-py3
+            name: nccl-7745
+            securityContext:
+              privileged: true
+              capabilities:
+                add: ["IPC_LOCK"]
+            resources:
+              limits:
+                ephemeral-storage: 100Gi
+                nvidia.com/gpu: 4
+                nvidia.com/sriov_resource_a: 1
+                nvidia.com/sriov_resource_b: 1
+                nvidia.com/sriov_resource_c: 1
+                nvidia.com/sriov_resource_d: 1
+              requests:
+                ephemeral-storage: 100Gi
+                nvidia.com/gpu: 4
+                nvidia.com/sriov_resource_a: 1
+                nvidia.com/sriov_resource_b: 1
+                nvidia.com/sriov_resource_c: 1
+                nvidia.com/sriov_resource_d: 1
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - keechi-titan-63
+                    - keechi-titan-64
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 128Gi
